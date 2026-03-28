@@ -5,3 +5,4 @@ langchain
 langchain-openai
 groq
 openpyxl
+python-dotenv
