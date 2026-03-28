@@ -7,26 +7,26 @@ from langchain_openai import ChatOpenAI
 # ================= PAGE CONFIG =================
 st.set_page_config(
     page_title="AI Business Decision Assistant",
-    page_icon="📊",
     layout="wide"
 )
 
 # ================= HEADER =================
-st.title("🚀 AI Business Decision Assistant")
-st.markdown(
-    "Empowering **data-driven decisions** for small businesses using AI 🤖"
-)
+st.title("AI Business Decision Assistant")
+st.markdown("Data-driven insights for smarter business decisions")
 
 # ================= SIDEBAR =================
-st.sidebar.header("⚙️ Settings")
-
-groq_key = st.sidebar.text_input("🔑 Enter Groq API Key", type="password")
+st.sidebar.header("Settings")
+groq_key = st.sidebar.text_input("Enter Groq API Key", type="password")
 
 st.sidebar.markdown("---")
-st.sidebar.info("Upload a dataset to begin analysis")
+st.sidebar.info("Upload a dataset to begin")
 
 # ================= FILE UPLOAD =================
-uploaded_file = st.file_uploader("📂 Upload CSV or Excel file", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+
+# ================= CLEAN FUNCTION =================
+def clean_text(text):
+    return str(text).replace('\xa0', ' ').strip()
 
 if uploaded_file:
 
@@ -37,87 +37,90 @@ if uploaded_file:
         else:
             df = pd.read_excel(uploaded_file)
 
-        st.success("✅ Dataset Loaded Successfully")
+        # 🔥 FIX ENCODING ISSUE
+        df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
+
+        st.success("Dataset loaded successfully")
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
         st.stop()
 
     # ================= DATA PREVIEW =================
-    st.subheader("📄 Dataset Preview")
+    st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
     # ================= KPI DASHBOARD =================
-    st.subheader("📊 Key Metrics")
+    st.subheader("Key Metrics")
 
     col1, col2, col3 = st.columns(3)
 
     if 'Sales' in df.columns:
-        col1.metric("💰 Total Sales", f"{df['Sales'].sum():,.0f}")
+        col1.metric("Total Sales", f"{df['Sales'].sum():,.0f}")
 
     if 'Profit' in df.columns:
-        col2.metric("📈 Total Profit", f"{df['Profit'].sum():,.0f}")
+        col2.metric("Total Profit", f"{df['Profit'].sum():,.0f}")
 
     if 'Quantity' in df.columns:
-        col3.metric("📦 Total Quantity", f"{df['Quantity'].sum():,.0f}")
+        col3.metric("Total Quantity", f"{df['Quantity'].sum():,.0f}")
 
     # ================= BUSINESS INSIGHTS =================
-    st.subheader("🧠 Business Insights")
+    st.subheader("Business Insights")
 
     insights = []
 
     try:
         if 'Product' in df.columns and 'Sales' in df.columns:
             top_product = df.groupby('Product')['Sales'].sum().idxmax()
-            insights.append(f"🏆 Top Product: **{top_product}**")
+            insights.append(f"Top Product: {top_product}")
 
         if 'Region' in df.columns and 'Sales' in df.columns:
             best_region = df.groupby('Region')['Sales'].sum().idxmax()
-            insights.append(f"🌍 Best Region: **{best_region}**")
+            insights.append(f"Best Region: {best_region}")
 
         if 'Profit' in df.columns:
             low_profit = df[df['Profit'] < df['Profit'].mean()]
-            insights.append(f"⚠️ {len(low_profit)} records have below-average profit")
+            insights.append(f"{len(low_profit)} records have below-average profit")
 
-    except:
-        insights.append("⚠️ Unable to compute some insights (check column names)")
+    except Exception:
+        insights.append("Unable to compute insights (check dataset columns)")
 
     for i in insights:
-        st.write("👉", i)
+        st.write("-", i)
 
     # ================= ALERT SYSTEM =================
-    st.subheader("🚨 AI Alerts")
+    st.subheader("Alerts")
 
     try:
         if 'Profit' in df.columns and df['Profit'].mean() < 1000:
-            st.error("⚠️ Low profitability detected!")
+            st.error("Low profitability detected")
 
         if 'Sales' in df.columns and df['Sales'].max() > 5 * df['Sales'].mean():
-            st.warning("⚠️ Sales spike anomaly detected!")
+            st.warning("Sales spike anomaly detected")
 
-    except:
+    except Exception:
         st.info("No alerts generated")
 
     # ================= VISUALIZATION =================
-    st.subheader("📈 Data Visualization")
+    st.subheader("Data Visualization")
 
     numeric_cols = df.select_dtypes(include='number').columns
 
     if len(numeric_cols) > 0:
-        selected_col = st.selectbox("Select column to visualize", numeric_cols)
+        selected_col = st.selectbox("Select column", numeric_cols)
 
         fig, ax = plt.subplots()
         df[selected_col].hist()
         ax.set_title(f"Distribution of {selected_col}")
         st.pyplot(fig)
     else:
-        st.info("No numeric columns available for visualization")
+        st.info("No numeric columns available")
 
     # ================= AI INSIGHTS =================
-    st.subheader("🤖 AI Insights & Q&A")
+    st.subheader("AI Insights & Q&A")
 
     if not groq_key:
-        st.warning("⚠️ Please enter your Groq API key in sidebar to enable AI features")
+        st.warning("Enter API key to enable AI features")
     else:
         os.environ["OPENAI_API_KEY"] = groq_key
 
@@ -128,57 +131,55 @@ if uploaded_file:
         )
 
         # -------- AI INSIGHTS --------
-        if st.button("✨ Generate AI Insights"):
-            with st.spinner("Analyzing dataset..."):
+        if st.button("Generate AI Insights"):
+            with st.spinner("Analyzing..."):
                 summary = df.describe().to_string()
 
                 prompt = f"""
-You are an expert business consultant.
+You are a business consultant.
 
 Dataset Summary:
 {summary}
 
 Provide:
-1. 3 actionable insights
-2. 3 business strategies to increase profit
-3. Identify risks
-4. Suggest one growth opportunity
-
-Keep it clear and practical.
+- Key insights
+- Business strategies
+- Risks
+- Growth opportunities
 """
 
                 try:
                     response = llm.invoke(prompt).content
+                    response = response.encode('utf-8', 'ignore').decode('utf-8')  # FIX
                     st.success(response)
                 except Exception as e:
                     st.error(f"AI Error: {e}")
 
         # -------- Q&A --------
-        st.subheader("❓ Ask Questions")
+        st.subheader("Ask Questions")
 
-        user_query = st.text_input("Ask a question about your data")
+        user_query = st.text_input("Enter your question")
 
         if user_query:
-            with st.spinner("Thinking..."):
+            with st.spinner("Processing..."):
                 prompt = f"""
 Dataset Summary:
 {df.describe().to_string()}
 
 Question:
 {user_query}
-
-Give a clear and business-focused answer.
 """
 
                 try:
                     answer = llm.invoke(prompt).content
+                    answer = answer.encode('utf-8', 'ignore').decode('utf-8')  # FIX
                     st.info(answer)
                 except Exception as e:
                     st.error(f"Error: {e}")
 
 else:
-    st.info("👆 Upload a dataset to start your AI analysis")
+    st.info("Upload a dataset to start analysis")
 
 # ================= FOOTER =================
 st.markdown("---")
-st.markdown("Built for Hackathon 🚀 | AI + Data + Impact")
+st.markdown("AI + Data Analytics Application")
