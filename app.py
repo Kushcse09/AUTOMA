@@ -3,6 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+
+# ================= LOAD ENV =================
+load_dotenv()
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
@@ -14,12 +18,14 @@ st.set_page_config(
 st.title("AI Business Decision Assistant")
 st.markdown("Data-driven insights for smarter business decisions")
 
-# ================= SIDEBAR =================
-st.sidebar.header("Settings")
-groq_key = st.sidebar.text_input("Enter Groq API Key", type="password")
+# ================= API KEY =================
+groq_key = os.getenv("OPENAI_API_KEY")
 
-st.sidebar.markdown("---")
-st.sidebar.info("Upload a dataset to begin")
+if not groq_key:
+    st.error("API key not found. Please set OPENAI_API_KEY in environment or Streamlit secrets.")
+    st.stop()
+
+os.environ["OPENAI_API_KEY"] = groq_key
 
 # ================= FILE UPLOAD =================
 uploaded_file = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
@@ -37,7 +43,7 @@ if uploaded_file:
         else:
             df = pd.read_excel(uploaded_file)
 
-        # 🔥 FIX ENCODING ISSUE
+        # Fix encoding issues
         df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
 
         st.success("Dataset loaded successfully")
@@ -116,26 +122,21 @@ if uploaded_file:
     else:
         st.info("No numeric columns available")
 
+    # ================= LLM SETUP =================
+    llm = ChatOpenAI(
+        model="llama-3.1-8b-instant",
+        base_url="https://api.groq.com/openai/v1",
+        temperature=0
+    )
+
     # ================= AI INSIGHTS =================
-    st.subheader("AI Insights & Q&A")
+    st.subheader("AI Insights")
 
-    if not groq_key:
-        st.warning("Enter API key to enable AI features")
-    else:
-        os.environ["OPENAI_API_KEY"] = groq_key
+    if st.button("Generate AI Insights"):
+        with st.spinner("Analyzing..."):
+            summary = df.describe().to_string()
 
-        llm = ChatOpenAI(
-            model="llama-3.1-8b-instant",
-            base_url="https://api.groq.com/openai/v1",
-            temperature=0
-        )
-
-        # -------- AI INSIGHTS --------
-        if st.button("Generate AI Insights"):
-            with st.spinner("Analyzing..."):
-                summary = df.describe().to_string()
-
-                prompt = f"""
+            prompt = f"""
 You are a business consultant.
 
 Dataset Summary:
@@ -148,21 +149,21 @@ Provide:
 - Growth opportunities
 """
 
-                try:
-                    response = llm.invoke(prompt).content
-                    response = response.encode('utf-8', 'ignore').decode('utf-8')  # FIX
-                    st.success(response)
-                except Exception as e:
-                    st.error(f"AI Error: {e}")
+            try:
+                response = llm.invoke(prompt).content
+                response = response.encode('utf-8', 'ignore').decode('utf-8')
+                st.success(response)
+            except Exception as e:
+                st.error(f"AI Error: {e}")
 
-        # -------- Q&A --------
-        st.subheader("Ask Questions")
+    # ================= Q&A =================
+    st.subheader("Ask Questions")
 
-        user_query = st.text_input("Enter your question")
+    user_query = st.text_input("Enter your question")
 
-        if user_query:
-            with st.spinner("Processing..."):
-                prompt = f"""
+    if user_query:
+        with st.spinner("Processing..."):
+            prompt = f"""
 Dataset Summary:
 {df.describe().to_string()}
 
@@ -170,12 +171,12 @@ Question:
 {user_query}
 """
 
-                try:
-                    answer = llm.invoke(prompt).content
-                    answer = answer.encode('utf-8', 'ignore').decode('utf-8')  # FIX
-                    st.info(answer)
-                except Exception as e:
-                    st.error(f"Error: {e}")
+            try:
+                answer = llm.invoke(prompt).content
+                answer = answer.encode('utf-8', 'ignore').decode('utf-8')
+                st.info(answer)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 else:
     st.info("Upload a dataset to start analysis")
