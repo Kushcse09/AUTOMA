@@ -10,117 +10,123 @@ load_dotenv()
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
-    page_title="AI Business Decision Assistant",
+    page_title="AutoMA - AI Decision Assistant",
     layout="wide"
 )
 
 # ================= HEADER =================
-st.title("AI Business Decision Assistant")
-st.markdown("Data-driven insights for smarter business decisions")
+st.title("🚀 AutoMA - AI Decision Assistant")
+st.markdown("### Empowering Small Businesses with AI-driven Decisions (SDG 8 & 9)")
 
 # ================= API KEY =================
-groq_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
 
-if not groq_key:
-    st.error("API key not found. Please set OPENAI_API_KEY in environment or Streamlit secrets.")
+if not api_key:
+    st.error("API key not found. Set OPENAI_API_KEY in environment.")
     st.stop()
 
-os.environ["OPENAI_API_KEY"] = groq_key
+os.environ["OPENAI_API_KEY"] = api_key
 
 # ================= FILE UPLOAD =================
-uploaded_file = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("📂 Upload CSV or Excel file", type=["csv", "xlsx"])
 
 # ================= CLEAN FUNCTION =================
 def clean_text(text):
     return str(text).replace('\xa0', ' ').strip()
 
+# ================= MAIN =================
 if uploaded_file:
 
-    # ================= LOAD DATA =================
+    # LOAD DATA
     try:
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
 
-        # Fix encoding issues
         df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
 
-        st.success("Dataset loaded successfully")
+        st.success("✅ Dataset loaded successfully")
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
         st.stop()
 
-    # ================= DATA PREVIEW =================
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
+    # ================= TABS =================
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📊 Dashboard",
+        "🤖 AI Decision Engine",
+        "🔮 Simulation",
+        "💬 Ask AI"
+    ])
 
-    # ================= KPI DASHBOARD =================
-    st.subheader("Key Metrics")
+    # ================= TAB 1: DASHBOARD =================
+    with tab1:
+        st.subheader("Dataset Preview")
+        st.dataframe(df.head())
 
-    col1, col2, col3 = st.columns(3)
+        st.subheader("Key Metrics")
 
-    if 'Sales' in df.columns:
-        col1.metric("Total Sales", f"{df['Sales'].sum():,.0f}")
+        col1, col2, col3 = st.columns(3)
 
-    if 'Profit' in df.columns:
-        col2.metric("Total Profit", f"{df['Profit'].sum():,.0f}")
-
-    if 'Quantity' in df.columns:
-        col3.metric("Total Quantity", f"{df['Quantity'].sum():,.0f}")
-
-    # ================= BUSINESS INSIGHTS =================
-    st.subheader("Business Insights")
-
-    insights = []
-
-    try:
-        if 'Product' in df.columns and 'Sales' in df.columns:
-            top_product = df.groupby('Product')['Sales'].sum().idxmax()
-            insights.append(f"Top Product: {top_product}")
-
-        if 'Region' in df.columns and 'Sales' in df.columns:
-            best_region = df.groupby('Region')['Sales'].sum().idxmax()
-            insights.append(f"Best Region: {best_region}")
+        if 'Sales' in df.columns:
+            col1.metric("Total Sales", f"{df['Sales'].sum():,.0f}")
 
         if 'Profit' in df.columns:
-            low_profit = df[df['Profit'] < df['Profit'].mean()]
-            insights.append(f"{len(low_profit)} records have below-average profit")
+            col2.metric("Total Profit", f"{df['Profit'].sum():,.0f}")
 
-    except Exception:
-        insights.append("Unable to compute insights (check dataset columns)")
+        if 'Quantity' in df.columns:
+            col3.metric("Total Quantity", f"{df['Quantity'].sum():,.0f}")
 
-    for i in insights:
-        st.write("-", i)
+        # BUSINESS INSIGHTS
+        st.subheader("Quick Insights")
 
-    # ================= ALERT SYSTEM =================
-    st.subheader("Alerts")
+        insights = []
 
-    try:
-        if 'Profit' in df.columns and df['Profit'].mean() < 1000:
-            st.error("Low profitability detected")
+        try:
+            if 'Product' in df.columns and 'Sales' in df.columns:
+                top_product = df.groupby('Product')['Sales'].sum().idxmax()
+                insights.append(f"🏆 Top Product: {top_product}")
 
-        if 'Sales' in df.columns and df['Sales'].max() > 5 * df['Sales'].mean():
-            st.warning("Sales spike anomaly detected")
+            if 'Region' in df.columns and 'Sales' in df.columns:
+                best_region = df.groupby('Region')['Sales'].sum().idxmax()
+                insights.append(f"🌍 Best Region: {best_region}")
 
-    except Exception:
-        st.info("No alerts generated")
+            if 'Profit' in df.columns:
+                low_profit = df[df['Profit'] < df['Profit'].mean()]
+                insights.append(f"⚠️ {len(low_profit)} records below average profit")
 
-    # ================= VISUALIZATION =================
-    st.subheader("Data Visualization")
+        except:
+            insights.append("Unable to compute insights")
 
-    numeric_cols = df.select_dtypes(include='number').columns
+        for i in insights:
+            st.write(i)
 
-    if len(numeric_cols) > 0:
-        selected_col = st.selectbox("Select column", numeric_cols)
+        # ALERTS
+        st.subheader("Alerts")
 
-        fig, ax = plt.subplots()
-        df[selected_col].hist()
-        ax.set_title(f"Distribution of {selected_col}")
-        st.pyplot(fig)
-    else:
-        st.info("No numeric columns available")
+        try:
+            if 'Profit' in df.columns and df['Profit'].mean() < 1000:
+                st.error("Low profitability detected")
+
+            if 'Sales' in df.columns and df['Sales'].max() > 5 * df['Sales'].mean():
+                st.warning("Sales anomaly detected")
+
+        except:
+            st.info("No alerts")
+
+        # VISUALIZATION
+        st.subheader("Visualization")
+
+        numeric_cols = df.select_dtypes(include='number').columns
+
+        if len(numeric_cols) > 0:
+            selected_col = st.selectbox("Select column", numeric_cols)
+
+            fig, ax = plt.subplots()
+            df[selected_col].hist()
+            ax.set_title(f"{selected_col} Distribution")
+            st.pyplot(fig)
 
     # ================= LLM SETUP =================
     llm = ChatOpenAI(
@@ -129,58 +135,90 @@ if uploaded_file:
         temperature=0
     )
 
-    # ================= AI INSIGHTS =================
-    st.subheader("AI Insights")
+    # ================= TAB 2: AI DECISION ENGINE =================
+    with tab2:
+        st.subheader("🤖 AI Decision Engine")
 
-    if st.button("Generate AI Insights"):
-        with st.spinner("Analyzing..."):
-            summary = df.describe().to_string()
+        st.info("Designed for small businesses & local vendors")
 
-            prompt = f"""
-You are a business consultant.
+        if st.button("Generate AI Decisions"):
+            with st.spinner("Analyzing business data..."):
+
+                summary = df.describe().to_string()
+
+                prompt = f"""
+You are an expert business consultant helping small businesses.
 
 Dataset Summary:
 {summary}
 
 Provide:
-- Key insights
-- Business strategies
-- Risks
-- Growth opportunities
+1. Key Insights
+2. Business Risks
+3. Growth Opportunities
+4. STRATEGIC DECISIONS (clear actions to take)
+5. Priority Action Plan (step-by-step)
 """
 
-            try:
-                response = llm.invoke(prompt).content
-                response = response.encode('utf-8', 'ignore').decode('utf-8')
-                st.success(response)
-            except Exception as e:
-                st.error(f"AI Error: {e}")
+                try:
+                    response = llm.invoke(prompt).content
+                    response = response.encode('utf-8', 'ignore').decode('utf-8')
 
-    # ================= Q&A =================
-    st.subheader("Ask Questions")
+                    st.success("AI Decision Output:")
+                    st.write(response)
 
-    user_query = st.text_input("Enter your question")
+                except Exception as e:
+                    st.error(f"AI Error: {e}")
 
-    if user_query:
-        with st.spinner("Processing..."):
-            prompt = f"""
+    # ================= TAB 3: SIMULATION =================
+    with tab3:
+        st.subheader("🔮 What-If Simulation")
+
+        if 'Sales' in df.columns:
+            change = st.slider("Change Sales (%)", -50, 50, 0)
+
+            simulated_sales = df['Sales'] * (1 + change / 100)
+
+            st.metric("Simulated Sales", f"{simulated_sales.sum():,.0f}")
+
+            if 'Profit' in df.columns:
+                simulated_profit = df['Profit'] * (1 + change / 100)
+                st.metric("Simulated Profit", f"{simulated_profit.sum():,.0f}")
+
+        else:
+            st.warning("Sales column required for simulation")
+
+    # ================= TAB 4: Q&A =================
+    with tab4:
+        st.subheader("💬 Ask AI")
+
+        user_query = st.text_input("Ask a business question")
+
+        if user_query:
+            with st.spinner("Processing..."):
+
+                prompt = f"""
 Dataset Summary:
 {df.describe().to_string()}
 
 Question:
 {user_query}
+
+Answer clearly for a non-technical business owner.
 """
 
-            try:
-                answer = llm.invoke(prompt).content
-                answer = answer.encode('utf-8', 'ignore').decode('utf-8')
-                st.info(answer)
-            except Exception as e:
-                st.error(f"Error: {e}")
+                try:
+                    answer = llm.invoke(prompt).content
+                    answer = answer.encode('utf-8', 'ignore').decode('utf-8')
+
+                    st.info(answer)
+
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 else:
-    st.info("Upload a dataset to start analysis")
+    st.info("📂 Upload a dataset to begin analysis")
 
 # ================= FOOTER =================
 st.markdown("---")
-st.markdown("AI + Data Analytics Application")
+st.markdown("Built by Kushal Mahesh Handigund | AI for Social Good 🚀")
