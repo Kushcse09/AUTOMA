@@ -14,9 +14,23 @@ st.set_page_config(
     layout="wide"
 )
 
+# ================= SIDEBAR =================
+st.sidebar.title("AutoMA")
+st.sidebar.markdown("AI Decision Intelligence")
+st.sidebar.markdown("---")
+st.sidebar.markdown("Kushal Mahesh Handigund")
+st.sidebar.markdown("SDG 8 & 9")
+st.sidebar.markdown("AI for Small Businesses")
+
 # ================= HEADER =================
-st.title("🚀 AutoMA - AI Decision Assistant")
-st.markdown("### Empowering Small Businesses with AI-driven Decisions (SDG 8 & 9)")
+st.title("AutoMA - AI Decision Assistant")
+
+st.info("""
+AutoMA is an AI-powered decision intelligence system designed to help small businesses,
+local vendors, and non-technical users make smarter, data-driven decisions using AI.
+""")
+
+st.markdown("---")
 
 # ================= API KEY =================
 api_key = os.getenv("OPENAI_API_KEY")
@@ -28,7 +42,7 @@ if not api_key:
 os.environ["OPENAI_API_KEY"] = api_key
 
 # ================= FILE UPLOAD =================
-uploaded_file = st.file_uploader("📂 Upload CSV or Excel file", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Upload your business dataset (CSV / Excel)", type=["csv", "xlsx"])
 
 # ================= CLEAN FUNCTION =================
 def clean_text(text):
@@ -37,7 +51,6 @@ def clean_text(text):
 # ================= MAIN =================
 if uploaded_file:
 
-    # LOAD DATA
     try:
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
@@ -46,26 +59,31 @@ if uploaded_file:
 
         df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
 
-        st.success("✅ Dataset loaded successfully")
+        st.success("Dataset loaded successfully")
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
         st.stop()
 
+    st.markdown("---")
+
     # ================= TABS =================
     tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Dashboard",
-        "🤖 AI Decision Engine",
-        "🔮 Simulation",
-        "💬 Ask AI"
+        "Dashboard",
+        "AI Decisions",
+        "Simulation",
+        "Ask AI"
     ])
 
-    # ================= TAB 1: DASHBOARD =================
+    # ================= TAB 1 =================
     with tab1:
+
         st.subheader("Dataset Preview")
         st.dataframe(df.head())
 
-        st.subheader("Key Metrics")
+        st.markdown("---")
+
+        st.subheader("Key Business Metrics")
 
         col1, col2, col3 = st.columns(3)
 
@@ -78,7 +96,8 @@ if uploaded_file:
         if 'Quantity' in df.columns:
             col3.metric("Total Quantity", f"{df['Quantity'].sum():,.0f}")
 
-        # BUSINESS INSIGHTS
+        st.markdown("---")
+
         st.subheader("Quick Insights")
 
         insights = []
@@ -86,23 +105,24 @@ if uploaded_file:
         try:
             if 'Product' in df.columns and 'Sales' in df.columns:
                 top_product = df.groupby('Product')['Sales'].sum().idxmax()
-                insights.append(f"🏆 Top Product: {top_product}")
+                insights.append(f"Top Product: {top_product}")
 
             if 'Region' in df.columns and 'Sales' in df.columns:
                 best_region = df.groupby('Region')['Sales'].sum().idxmax()
-                insights.append(f"🌍 Best Region: {best_region}")
+                insights.append(f"Best Region: {best_region}")
 
             if 'Profit' in df.columns:
                 low_profit = df[df['Profit'] < df['Profit'].mean()]
-                insights.append(f"⚠️ {len(low_profit)} records below average profit")
+                insights.append(f"{len(low_profit)} records below average profit")
 
         except:
             insights.append("Unable to compute insights")
 
         for i in insights:
-            st.write(i)
+            st.success(i)
 
-        # ALERTS
+        st.markdown("---")
+
         st.subheader("Alerts")
 
         try:
@@ -115,70 +135,72 @@ if uploaded_file:
         except:
             st.info("No alerts")
 
-        # VISUALIZATION
+        st.markdown("---")
+
         st.subheader("Visualization")
 
         numeric_cols = df.select_dtypes(include='number').columns
 
         if len(numeric_cols) > 0:
-            selected_col = st.selectbox("Select column", numeric_cols)
+            selected_col = st.selectbox("Select metric", numeric_cols)
 
             fig, ax = plt.subplots()
             df[selected_col].hist()
             ax.set_title(f"{selected_col} Distribution")
             st.pyplot(fig)
 
-    # ================= LLM SETUP =================
+    # ================= LLM =================
     llm = ChatOpenAI(
         model="llama-3.1-8b-instant",
         base_url="https://api.groq.com/openai/v1",
         temperature=0
     )
 
-    # ================= TAB 2: AI DECISION ENGINE =================
+    # ================= TAB 2 =================
     with tab2:
-        st.subheader("🤖 AI Decision Engine")
+        st.subheader("AI Decision Engine")
 
-        st.info("Designed for small businesses & local vendors")
+        st.info("AI-generated strategies, risks, and action plans for business growth")
 
         if st.button("Generate AI Decisions"):
-            with st.spinner("Analyzing business data..."):
+            with st.spinner("Analyzing..."):
 
                 summary = df.describe().to_string()
 
                 prompt = f"""
-You are an expert business consultant helping small businesses.
+You are a top business consultant helping small businesses grow.
 
 Dataset Summary:
 {summary}
 
 Provide:
 1. Key Insights
-2. Business Risks
-3. Growth Opportunities
-4. STRATEGIC DECISIONS (clear actions to take)
-5. Priority Action Plan (step-by-step)
+2. Risks
+3. Opportunities
+4. Strategic Decisions (clear actions)
+5. Step-by-step Action Plan
 """
 
                 try:
                     response = llm.invoke(prompt).content
                     response = response.encode('utf-8', 'ignore').decode('utf-8')
 
-                    st.success("AI Decision Output:")
+                    st.success("AI Decision Output")
                     st.write(response)
 
                 except Exception as e:
                     st.error(f"AI Error: {e}")
 
-    # ================= TAB 3: SIMULATION =================
+    # ================= TAB 3 =================
     with tab3:
-        st.subheader("🔮 What-If Simulation")
+        st.subheader("What-If Simulation")
+
+        st.warning("Simulate how changes impact your business")
 
         if 'Sales' in df.columns:
             change = st.slider("Change Sales (%)", -50, 50, 0)
 
             simulated_sales = df['Sales'] * (1 + change / 100)
-
             st.metric("Simulated Sales", f"{simulated_sales.sum():,.0f}")
 
             if 'Profit' in df.columns:
@@ -186,13 +208,13 @@ Provide:
                 st.metric("Simulated Profit", f"{simulated_profit.sum():,.0f}")
 
         else:
-            st.warning("Sales column required for simulation")
+            st.error("Sales column required")
 
-    # ================= TAB 4: Q&A =================
+    # ================= TAB 4 =================
     with tab4:
-        st.subheader("💬 Ask AI")
+        st.subheader("Ask AI")
 
-        user_query = st.text_input("Ask a business question")
+        user_query = st.text_input("Ask any business question")
 
         if user_query:
             with st.spinner("Processing..."):
@@ -204,21 +226,21 @@ Dataset Summary:
 Question:
 {user_query}
 
-Answer clearly for a non-technical business owner.
+Explain simply for a business owner.
 """
 
                 try:
                     answer = llm.invoke(prompt).content
                     answer = answer.encode('utf-8', 'ignore').decode('utf-8')
 
-                    st.info(answer)
+                    st.success(answer)
 
                 except Exception as e:
                     st.error(f"Error: {e}")
 
 else:
-    st.info("📂 Upload a dataset to begin analysis")
+    st.info("Upload your dataset to begin")
 
 # ================= FOOTER =================
 st.markdown("---")
-st.markdown("Built by Kushal Mahesh Handigund | AI for Social Good 🚀")
+st.markdown("Built by Kushal Mahesh Handigund | AI for Social Good")
