@@ -10,24 +10,24 @@ load_dotenv()
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
-    page_title="AutoMA - AI Business Growth System",
+    page_title="AutoMA - AI Decision Assistant",
     layout="wide"
 )
 
 # ================= SIDEBAR =================
 st.sidebar.title("AutoMA")
-st.sidebar.markdown("AI Business Growth System")
-st.sidebar.markdown("Upload → Insights → Action")
+st.sidebar.markdown("AI Decision Intelligence")
 st.sidebar.markdown("---")
 st.sidebar.markdown("Kushal Mahesh Handigund")
+st.sidebar.markdown("SDG 8 & 9")
+st.sidebar.markdown("AI for Small Businesses")
 
 # ================= HEADER =================
-st.title("AutoMA - AI Business Growth System")
+st.title("AutoMA - AI Decision Assistant")
 
 st.info("""
-Upload your business data → get insights → take action
-
-AutoMA analyzes your business data and tells you exactly what to do to improve revenue and performance.
+AutoMA is an AI-powered decision intelligence system designed to help small businesses,
+local vendors, and non-technical users make smarter, data-driven decisions using AI.
 """)
 
 st.markdown("---")
@@ -42,8 +42,7 @@ if not api_key:
 os.environ["OPENAI_API_KEY"] = api_key
 
 # ================= FILE UPLOAD =================
-st.subheader("Upload Your Data")
-uploaded_file = st.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Upload your business dataset (CSV / Excel)", type=["csv", "xlsx"])
 
 # ================= CLEAN FUNCTION =================
 def clean_text(text):
@@ -71,7 +70,7 @@ if uploaded_file:
     # ================= TABS =================
     tab1, tab2, tab3, tab4 = st.tabs([
         "Dashboard",
-        "AI Insights",
+        "AI Decisions",
         "Simulation",
         "Ask AI"
     ])
@@ -84,7 +83,7 @@ if uploaded_file:
 
         st.markdown("---")
 
-        st.subheader("Key Metrics")
+        st.subheader("Key Business Metrics")
 
         col1, col2, col3 = st.columns(3)
 
@@ -112,11 +111,29 @@ if uploaded_file:
                 best_region = df.groupby('Region')['Sales'].sum().idxmax()
                 insights.append(f"Best Region: {best_region}")
 
+            if 'Profit' in df.columns:
+                low_profit = df[df['Profit'] < df['Profit'].mean()]
+                insights.append(f"{len(low_profit)} records below average profit")
+
         except:
             insights.append("Unable to compute insights")
 
         for i in insights:
             st.success(i)
+
+        st.markdown("---")
+
+        st.subheader("Alerts")
+
+        try:
+            if 'Profit' in df.columns and df['Profit'].mean() < 1000:
+                st.error("Low profitability detected")
+
+            if 'Sales' in df.columns and df['Sales'].max() > 5 * df['Sales'].mean():
+                st.warning("Sales anomaly detected")
+
+        except:
+            st.info("No alerts")
 
         st.markdown("---")
 
@@ -141,54 +158,46 @@ if uploaded_file:
 
     # ================= TAB 2 =================
     with tab2:
+        st.subheader("AI Decision Engine")
 
-        st.subheader("AI Business Insights")
+        st.info("AI-generated strategies, risks, and action plans for business growth")
 
-        st.info("Get structured insights and clear action steps")
-
-        if st.button("Generate Insights"):
-
-            with st.spinner("Analyzing your data..."):
+        if st.button("Generate AI Decisions"):
+            with st.spinner("Analyzing..."):
 
                 summary = df.describe().to_string()
 
                 prompt = f"""
-You are an expert business analyst.
+You are a top business consultant helping small businesses grow.
 
-Analyze the dataset and respond ONLY in this format:
-
-Key Insights:
-- Bullet points
-
-Problems:
-- Issues in business
-
-Recommendations:
-- Clear actions to improve revenue
-
-Keep it simple and actionable.
-
-Dataset:
+Dataset Summary:
 {summary}
+
+Provide:
+1. Key Insights
+2. Risks
+3. Opportunities
+4. Strategic Decisions (clear actions)
+5. Step-by-step Action Plan
 """
 
                 try:
                     response = llm.invoke(prompt).content
                     response = response.encode('utf-8', 'ignore').decode('utf-8')
 
-                    st.success("AI Analysis Ready")
-                    st.markdown(response)
+                    st.success("AI Decision Output")
+                    st.write(response)
 
                 except Exception as e:
                     st.error(f"AI Error: {e}")
 
     # ================= TAB 3 =================
     with tab3:
-
         st.subheader("What-If Simulation")
 
-        if 'Sales' in df.columns:
+        st.warning("Simulate how changes impact your business")
 
+        if 'Sales' in df.columns:
             change = st.slider("Change Sales (%)", -50, 50, 0)
 
             simulated_sales = df['Sales'] * (1 + change / 100)
@@ -199,17 +208,15 @@ Dataset:
                 st.metric("Simulated Profit", f"{simulated_profit.sum():,.0f}")
 
         else:
-            st.warning("Sales column required")
+            st.error("Sales column required")
 
     # ================= TAB 4 =================
     with tab4:
-
         st.subheader("Ask AI")
 
-        user_query = st.text_input("Ask a business question")
+        user_query = st.text_input("Ask any business question")
 
         if user_query:
-
             with st.spinner("Processing..."):
 
                 prompt = f"""
@@ -219,7 +226,7 @@ Dataset Summary:
 Question:
 {user_query}
 
-Answer clearly for a business owner with actionable advice.
+Explain simply for a business owner.
 """
 
                 try:
@@ -236,4 +243,4 @@ else:
 
 # ================= FOOTER =================
 st.markdown("---")
-st.markdown("Upload your data → get insights → take action")
+st.markdown("Built by Kushal Mahesh Handigund | AI for Social Good")
